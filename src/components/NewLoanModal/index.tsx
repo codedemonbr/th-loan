@@ -2,6 +2,7 @@ import React, { FormEvent, useCallback, useEffect, useState } from "react";
 import Modal from "react-modal";
 import closeImg from "../../assets/close.svg";
 import { useLoans } from "../../hooks/useLoans";
+import { useToast } from "../../hooks/useToast";
 import { api } from "../../services/api";
 import { firstParcel } from "../../utils/firstParcelDate";
 import { formatCurrency } from "../../utils/formatCurrency";
@@ -46,6 +47,7 @@ const NewLoanModal: React.FC<NewLoanModalProps> = ({
 
     /** Custom hooks */
     const { createLoan, limits, setLimits } = useLoans();
+    const { setToastConfig } = useToast();
 
     const handleCleanSimulation = useCallback(() => {
         setBestDate(5);
@@ -103,6 +105,11 @@ const NewLoanModal: React.FC<NewLoanModalProps> = ({
             const { data } = await api.get(
                 `/installments?desiredValue=${value}`
             );
+            setToastConfig({
+                message: `Simulação realizada com sucesso!`,
+                option: "success",
+                trigger: true,
+            });
             const { parcelas } = data;
 
             setInstallments(parcelas);
@@ -116,9 +123,17 @@ const NewLoanModal: React.FC<NewLoanModalProps> = ({
             );
             setSelectedInstallment(higherValue);
         } catch (error) {
-            console.log(`Error: ${error}`);
+            setToastConfig({
+                //@ts-ignore
+                message: error?.message
+                    ? //@ts-ignore
+                      error?.message
+                    : "Por favor tente novamente mais tarde",
+                option: "error",
+                trigger: true,
+            });
         }
-    }, [amount]);
+    }, [amount, setToastConfig]);
     /** Cleaning values when we close the modal */
     useEffect(() => {
         if (!isOpen) {

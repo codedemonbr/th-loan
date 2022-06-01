@@ -3,11 +3,13 @@ import {
     Dispatch,
     ReactNode,
     SetStateAction,
+    useCallback,
     useContext,
     useEffect,
     useState,
 } from "react";
 import { api } from "../services/api";
+import { useToast } from "./useToast";
 
 interface Loan {
     id: string;
@@ -44,25 +46,82 @@ export function LoansProvider({ children }: LoansProviderProps) {
         usedLimit: 0,
         availableLimit: 0,
     });
+    const { setToastConfig } = useToast();
 
     useEffect(() => {
         api.get("/loans")
-            .then((response) => setLoans(response.data))
-            .catch((error) => console.log(error));
+            .then((response) => {
+                setLoans(response.data);
+
+                setToastConfig({
+                    message: `Empréstimos carregados com sucesso!`,
+                    option: "success",
+                    trigger: true,
+                });
+            })
+            .catch((error) => {
+                setToastConfig({
+                    //@ts-ignore
+                    message: error?.message
+                        ? //@ts-ignore
+                          error?.message
+                        : "Por favor tente novamente mais tarde",
+                    option: "error",
+                    trigger: true,
+                });
+            });
 
         api.get("/limit")
-            .then((response) => setLimits(response.data))
-            .catch((error) => console.log(error));
-    }, []);
+            .then((response) => {
+                setLimits(response.data);
 
-    const createLoan = async (loanInput: LoanInput) => {
-        let inicio = performance.now();
-        const { data } = await api.post("/loans", { ...loanInput });
-        console.log("tempo decorrido >>>" + (performance.now() - inicio));
+                setToastConfig({
+                    message: `Limites carregados com sucesso!`,
+                    option: "success",
+                    trigger: true,
+                });
+            })
+            .catch((error) => {
+                setToastConfig({
+                    //@ts-ignore
+                    message: error?.message
+                        ? //@ts-ignore
+                          error?.message
+                        : "Por favor tente novamente mais tarde",
+                    option: "error",
+                    trigger: true,
+                });
+            });
+    }, [setToastConfig]);
 
-        setLoans([...data]);
-    };
-
+    const createLoan = useCallback(
+        async (loanInput: LoanInput) => {
+            try {
+                let inicio = performance.now();
+                const { data } = await api.post("/loans", { ...loanInput });
+                console.log(
+                    "tempo decorrido >>>" + (performance.now() - inicio)
+                );
+                setToastConfig({
+                    message: `Empréstimo criado com sucesso!`,
+                    option: "success",
+                    trigger: true,
+                });
+                setLoans([...data]);
+            } catch (error) {
+                setToastConfig({
+                    //@ts-ignore
+                    message: error?.message
+                        ? //@ts-ignore
+                          error?.message
+                        : "Por favor tente novamente mais tarde",
+                    option: "error",
+                    trigger: true,
+                });
+            }
+        },
+        [setToastConfig]
+    );
     return (
         <LoansContext.Provider value={{ loans, limits, setLimits, createLoan }}>
             {children}
