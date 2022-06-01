@@ -1,21 +1,25 @@
-import React from "react";
+import React, { useCallback, useEffect } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/ReactToastify.min.css";
-interface ToastProps {
-    message: string;
-    option: "success" | "info" | "warning" | "error";
-}
+import { useToast } from "../../hooks/useToast";
 
 /**Criar hook disso */
-const Toast: React.FC<ToastProps> = ({ message, option }) => {
-    const addNotification = () => {
-        toast(message, {
-            type: option,
+const Toast: React.FC = () => {
+    const { toastConfig } = useToast();
+    const addNotification = useCallback(() => {
+        toast(toastConfig.message, {
+            type: toastConfig.option,
         });
-    };
+    }, [toastConfig.message, toastConfig.option]);
+
+    useEffect(() => {
+        if (toastConfig.trigger) {
+            addNotification();
+        }
+    }, [addNotification, toastConfig.trigger]);
+
     return (
-        <div className="App">
-            <button onClick={addNotification}>Add notificaiton</button>
+        <>
             <ToastContainer
                 position="bottom-left"
                 autoClose={5000}
@@ -27,8 +31,7 @@ const Toast: React.FC<ToastProps> = ({ message, option }) => {
                 draggable
                 pauseOnHover
             />
-            <a href=""></a>
-        </div>
+        </>
     );
 };
 

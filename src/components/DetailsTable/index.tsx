@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useToast } from "../../hooks/useToast";
 import { api } from "../../services/api";
 import { formatCurrency } from "../../utils/formatCurrency";
 import { Container, PayButton, UnsuccessContainer } from "./styles";
@@ -25,15 +26,31 @@ const DetailsTable: React.FC = () => {
 
     const [loan, setLoan] = useState<ILoanDTO>({} as ILoanDTO);
 
+    const { setToastConfig } = useToast();
+
     const handleGetLoanDetails = useCallback(async () => {
         try {
             const { data } = await api.get(`/loans/${id}`);
+            setToastConfig({
+                message: `Detalhes do empréstimo carregados!`,
+                option: "success",
+                trigger: true,
+            });
 
             setLoan(data[0]);
         } catch (error) {
+            setToastConfig({
+                //@ts-ignore
+                message: error?.message
+                    ? //@ts-ignore
+                      error?.message
+                    : "Por favor tente novamente mais tarde",
+                option: "error",
+                trigger: true,
+            });
             console.log(error);
         }
-    }, [id]);
+    }, [id, setToastConfig]);
 
     const handleUpdateStateClientSide = useCallback(
         (status: boolean, idParcel: string) => {
@@ -63,14 +80,29 @@ const DetailsTable: React.FC = () => {
         async (idParcel: string, status: boolean) => {
             try {
                 const obj = { idParcel, status };
-                api.patch(`/loans/pay/${id}`, obj);
+
+                await api.patch(`/loans/pay/${id}`, obj);
+                setToastConfig({
+                    message: `Parcela alterada com sucesso!`,
+                    option: "success",
+                    trigger: true,
+                });
 
                 handleUpdateStateClientSide(status, idParcel);
             } catch (error) {
+                setToastConfig({
+                    //@ts-ignore
+                    message: error?.message
+                        ? //@ts-ignore
+                          error?.message
+                        : "Por favor tente novamente mais tarde",
+                    option: "error",
+                    trigger: true,
+                });
                 console.log(error);
             }
         },
-        [handleUpdateStateClientSide, id]
+        [handleUpdateStateClientSide, id, setToastConfig]
     );
 
     useEffect(() => {

@@ -6,6 +6,7 @@ import {
     useState,
 } from "react";
 import { api } from "../services/api";
+import { useToast } from "./useToast";
 
 interface Transaction {
     id: number;
@@ -35,22 +36,56 @@ const TransactionsContext = createContext<TransactionsContextData>(
 
 export function TransactionsProvider({ children }: TransactionsProviderProps) {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
-
+    const { setToastConfig } = useToast();
     useEffect(() => {
-        api.get("/transactions").then((response) =>
-            setTransactions(response.data.transactions)
-        );
-    }, []);
+        api.get("/transactions")
+            .then((response) => {
+                setTransactions(response.data.transactions);
+                setToastConfig({
+                    message: `Transações carregadas com sucesso!`,
+                    option: "success",
+                    trigger: true,
+                });
+            })
+            .catch((error) => {
+                setToastConfig({
+                    //@ts-ignore
+                    message: error?.message
+                        ? //@ts-ignore
+                          error?.message
+                        : "Por favor tente novamente mais tarde",
+                    option: "error",
+                    trigger: true,
+                });
+            });
+    }, [setToastConfig]);
 
     const createTransaction = async (transactionInput: TransactionInput) => {
-        const response = await api.post("/transactions", {
-            ...transactionInput,
-            createdAt: new Date(),
-        });
+        try {
+            const response = await api.post("/transactions", {
+                ...transactionInput,
+                createdAt: new Date(),
+            });
+            setToastConfig({
+                message: `Transação criada com sucesso!`,
+                option: "success",
+                trigger: true,
+            });
 
-        const { data } = response;
+            const { data } = response;
 
-        setTransactions([...data]);
+            setTransactions([...data]);
+        } catch (error) {
+            setToastConfig({
+                //@ts-ignore
+                message: error?.message
+                    ? //@ts-ignore
+                      error?.message
+                    : "Por favor tente novamente mais tarde",
+                option: "error",
+                trigger: true,
+            });
+        }
     };
 
     return (
